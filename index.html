@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Vendas e Retiradas - Mudas de Café</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        coffee: {
+                            50: '#fdfaf6',
+                            100: '#f7efe4',
+                            200: '#eedcc4',
+                            300: '#dfc29c',
+                            400: '#cca06f',
+                            500: '#bc844c',
+                            600: '#a86d3d',
+                            700: '#8c5634',
+                            800: '#72462f',
+                            900: '#5d3b29',
+                        },
+                        leaf: {
+                            50: '#f2fbf5',
+                            100: '#e1f6e8',
+                            200: '#c4ecd2',
+                            300: '#96dcb0',
+                            400: '#5fc386',
+                            500: '#39a765',
+                            600: '#29884f',
+                            700: '#236c42',
+                            800: '#1f5637',
+                            900: '#1b472f',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8f6f2;
+            color: #1e293b;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1ede6;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- Top Header Navigation -->
+    <header class="bg-gradient-to-r from-leaf-900 via-leaf-800 to-coffee-900 text-white shadow-lg sticky top-0 z-30 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <!-- Brand Title -->
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-leaf-500/20 border border-leaf-400/40 flex items-center justify-center shadow-inner">
+                        <i class="fa-solid fa-seedling text-2xl text-leaf-300"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">Viveiro CaféGestão</h1>
+                            <span class="hidden sm:inline-block text-xs font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-leaf-500/30 text-leaf-200 border border-leaf-400/30">
+                                Controle de Mudas
+                            </span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-leaf-100/80">
+                            Vendas, Retiradas Parciais, Saldos e Agendamentos por Variedade
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <button onclick="openSaleModal()" class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-leaf-500 hover:bg-leaf-400 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer">
+                        <i class="fa-solid fa-plus-circle"></i>
+                        <span>Nova Venda</span>
+                    </button>
+                    <button onclick="exportToCSV()" class="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm border border-white/15 transition-all cursor-pointer" title="Exportar planilha compatível com Excel e Google Planilhas">
+                        <i class="fa-solid fa-file-csv text-leaf-300"></i>
+                        <span class="hidden sm:inline">Exportar CSV</span>
+                    </button>
+                    <button onclick="openResetConfirmModal()" class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/15 text-leaf-200 font-medium text-sm border border-white/10 transition-all cursor-pointer" title="Restaurar dados iniciais da planilha">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main View Navigation Tabs -->
+            <div class="flex items-center gap-2 mt-5 pt-3 border-t border-white/10 overflow-x-auto">
+                <button onclick="switchMainTab('vendas')" id="tab-btn-vendas" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 bg-white text-leaf-900 shadow-sm whitespace-nowrap">
+                    <i class="fa-solid fa-table-list"></i>
+                    <span>Vendas e Retiradas</span>
+                </button>
+                <button onclick="switchMainTab('agenda')" id="tab-btn-agenda" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 text-leaf-100 hover:bg-white/10 whitespace-nowrap">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span>Agenda de Retiradas</span>
+                    <span id="badge-agenda-count" class="px-2 py-0.5 text-xs rounded-full bg-amber-400 text-amber-950 font-bold">0</span>
+                </button>
+                <button onclick="switchMainTab('variedades')" id="tab-btn-variedades" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 text-leaf-100 hover:bg-white/10 whitespace-nowrap">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Painel por Variedade</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 no-print">
+
+        <!-- Top Global KPIs -->
+        <section aria-label="Indicadores Gerais" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total Comprado -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-stone-200/80 flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-stone-500">Total de Mudas Vendidas</span>
+                    <p id="kpi-total-comprado" class="text-2xl sm:text-3xl font-extrabold text-stone-800 mt-1">0</p>
+                    <p id="kpi-total-pedidos" class="text-xs text-stone-500 mt-1">Em 0 pedidos registrados</p>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-leaf-100 text-leaf-700 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-seedling"></i>
+                </div>
+            </div>
+
+            <!-- Total Já Retirado -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-stone-200/80 flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-stone-500">Total Já Retirado</span>
+                    <p id="kpi-total-retirado" class="text-2xl sm:text-3xl font-extrabold text-leaf-600 mt-1">0</p>
+                    <p id="kpi-perc-retirado" class="text-xs text-leaf-700 font-medium mt-1">0% do total entregue</p>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-truck-ramp-box"></i>
+                </div>
+            </div>
+
+            <!-- Saldo a Retirar (Falta Retirar) -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-amber-200/90 flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-amber-800">Falta Retirar (No Viveiro)</span>
+                    <p id="kpi-total-saldo" class="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1">0</p>
+                    <p id="kpi-pedidos-pendentes" class="text-xs text-amber-700 font-medium mt-1">0 pedidos aguardando retirada</p>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+            </div>
+
+            <!-- Formas de Pagamento Resumo Rápido -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-stone-200/80 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-stone-500">Mudas por Pagamento</span>
+                    <i class="fa-solid fa-wallet text-coffee-600 text-sm"></i>
+                </div>
+                <div class="space-y-1.5 text-xs">
+                    <div onclick="filterByPaymentQuick('PIX')" class="flex items-center justify-between p-1.5 rounded-lg hover:bg-stone-100 cursor-pointer transition-colors" title="Clique para filtrar por PIX">
+                        <span class="flex items-center gap-1.5 font-medium text-stone-700">
+                            <span class="w-2 h-2 rounded-full bg-teal-500"></span> PIX
+                        </span>
+                        <span id="kpi-pay-pix" class="font-bold text-stone-800">0 mudas</span>
+                    </div>
+                    <div onclick="filterByPaymentQuick('Boleto')" class="flex items-center justify-between p-1.5 rounded-lg hover:bg-stone-100 cursor-pointer transition-colors" title="Clique para filtrar por Boleto">
+                        <span class="flex items-center gap-1.5 font-medium text-stone-700">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span> Boleto
+                        </span>
+                        <span id="kpi-pay-boleto" class="font-bold text-stone-800">0 mudas</span>
+                    </div>
+                    <div onclick="filterByPaymentQuick('Dinheiro')" class="flex items-center justify-between p-1.5 rounded-lg hover:bg-stone-100 cursor-pointer transition-colors" title="Clique para filtrar por Dinheiro">
+                        <span class="flex items-center gap-1.5 font-medium text-stone-700">
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span> Dinheiro
+                        </span>
+                        <span id="kpi-pay-dinheiro" class="font-bold text-stone-800">0 mudas</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Variety Summary Cards (Interactive Filters) -->
+        <section aria-label="Resumo por Variedade">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-stone-600 flex items-center gap-2">
+                    <i class="fa-solid fa-plant-wilt text-leaf-600"></i>
+                    <span>Controle por Variedade de Café (Clique para filtrar)</span>
+                </h2>
+                <button onclick="setVarietyFilter('TODAS')" id="reset-variety-btn" class="hidden text-xs font-semibold text-leaf-700 hover:text-leaf-900 bg-leaf-100 px-3 py-1 rounded-full transition-all">
+                    Mostrar Todas as Variedades
+                </button>
+            </div>
+            <div id="variety-cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </section>
+
+        <!-- ==================== TAB 1: VENDAS E RETIRADAS ==================== -->
+        <section id="view-vendas" class="space-y-4">
+            <!-- Filter & Search Bar -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-stone-200/80 space-y-4">
+                <!-- Variety Pills Row -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-stone-100">
+                    <div class="flex flex-wrap items-center gap-2" id="variety-filter-pills">
+                        <button onclick="setVarietyFilter('TODAS')" data-var="TODAS" class="var-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-leaf-800 text-white shadow-sm cursor-pointer">
+                            Todas as Variedades
+                        </button>
+                        <button onclick="setVarietyFilter('CAFÉ CATUAÍ')" data-var="CAFÉ CATUAÍ" class="var-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-stone-100 text-stone-700 hover:bg-stone-200 cursor-pointer flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                            CAFÉ CATUAÍ
+                        </button>
+                        <button onclick="setVarietyFilter('CAFÉ CATUCAÍ')" data-var="CAFÉ CATUCAÍ" class="var-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-stone-100 text-stone-700 hover:bg-stone-200 cursor-pointer flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-600"></span>
+                            CAFÉ CATUCAÍ
+                        </button>
+                        <button onclick="setVarietyFilter('CAFÉ IAC44')" data-var="CAFÉ IAC44" class="var-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-stone-100 text-stone-700 hover:bg-stone-200 cursor-pointer flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
+                            CAFÉ IAC44
+                        </button>
+                    </div>
+
+                    <div class="text-xs text-stone-500 font-medium" id="table-counter-label">
+                        Exibindo 12 vendas
+                    </div>
+                </div>
+
+                <!-- Search & Dropdown Filters -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <!-- Search Input -->
+                    <div class="relative sm:col-span-2">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 text-sm"></i>
+                        <input type="text" id="search-input" oninput="renderAll()" placeholder="Buscar por cliente, fazenda, código (ex: VND-002) ou observação..." class="w-full pl-10 pr-9 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:bg-white transition-all">
+                        <button onclick="clearSearch()" id="clear-search-btn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <!-- Filter by Status -->
+                    <div>
+                        <select id="filter-status" onchange="renderAll()" class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-medium text-stone-700 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                            <option value="TODOS">Status: Todos os Pedidos</option>
+                            <option value="COM_SALDO">⚠️ Com Saldo a Retirar (Pendente + Parcial)</option>
+                            <option value="Pendente">🔴 Pendente (0 retirado)</option>
+                            <option value="Retirada Parcial">🟡 Retirada Parcial</option>
+                            <option value="Concluído">🟢 Concluído (100% entregue)</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter by Payment Method -->
+                    <div>
+                        <select id="filter-pagamento" onchange="renderAll()" class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-medium text-stone-700 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                            <option value="TODAS">Pagamento: Todas as Formas</option>
+                            <option value="PIX">PIX</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="Boleto">Boleto</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales & Pickup Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-stone-200/80 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-stone-100/90 border-b border-stone-200 text-[11px] font-bold uppercase tracking-wider text-stone-600">
+                                <th class="py-3.5 px-4">Cód / Data Venda</th>
+                                <th class="py-3.5 px-4">Cliente / Propriedade</th>
+                                <th class="py-3.5 px-4">Variedade</th>
+                                <th class="py-3.5 px-3 text-center">Pagamento</th>
+                                <th class="py-3.5 px-3 text-right">Qtd. Comprada</th>
+                                <th class="py-3.5 px-3 text-right">Qtd. Retirada</th>
+                                <th class="py-3.5 px-3 text-right bg-amber-50/60 text-amber-900">Falta Retirar</th>
+                                <th class="py-3.5 px-3 text-center">Últ. Retirada</th>
+                                <th class="py-3.5 px-3 text-center">Previsão Retirada</th>
+                                <th class="py-3.5 px-3 text-center">Status</th>
+                                <th class="py-3.5 px-4 text-right">Ações Rápidas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-table-body" class="divide-y divide-stone-200/70 text-sm">
+                            <!-- Rows injected by JS -->
+                        </tbody>
+                        <tfoot id="sales-table-footer" class="bg-stone-50 border-t-2 border-stone-200 font-bold text-stone-800 text-sm">
+                            <!-- Totals injected by JS -->
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: AGENDA DE PREVISÃO DE RETIRADAS ==================== -->
+        <section id="view-agenda" class="hidden space-y-4">
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-stone-200/80">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-stone-100">
+                    <div>
+                        <h2 class="text-lg font-bold text-stone-800 flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-day text-leaf-600"></i>
+                            <span>Cronograma de Agendamento de Retiradas</span>
+                        </h2>
+                        <p class="text-xs sm:text-sm text-stone-500 mt-0.5">
+                            Pedidos com mudas pendentes no viveiro ordenados pela data prevista de retirada para programação de separação e carregamento.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="agenda-variety-filter" onchange="renderAgenda()" class="px-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm font-medium text-stone-700 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                            <option value="TODAS">Todas as Variedades</option>
+                            <option value="CAFÉ CATUAÍ">CAFÉ CATUAÍ</option>
+                            <option value="CAFÉ CATUCAÍ">CAFÉ CATUCAÍ</option>
+                            <option value="CAFÉ IAC44">CAFÉ IAC44</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Agenda Cards List -->
+                <div id="agenda-list-container" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: PAINEL POR VARIEDADE ==================== -->
+        <section id="view-variedades" class="hidden space-y-6">
+            <div id="variedades-detailed-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 3 Columns (CATUAÍ, CATUCAÍ, IAC44) populated via JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== MODAL 1: NOVA VENDA / EDITAR VENDA ==================== -->
+    <div id="sale-modal" class="fixed inset-0 z-50 hidden bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto no-print">
+        <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-stone-200 overflow-hidden my-8 animate-fadeIn">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-leaf-900 to-coffee-900 px-6 py-4 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-seedling text-leaf-300 text-xl"></i>
+                    <h3 id="sale-modal-title" class="text-lg font-bold">Cadastrar Nova Venda de Mudas</h3>
+                </div>
+                <button onclick="closeSaleModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="sale-form" onsubmit="handleSaveSale(event)" class="p-6 space-y-5">
+                <input type="hidden" id="form-sale-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">Código da Venda *</label>
+                        <input type="text" id="form-codigo" required class="w-full px-3.5 py-2.5 bg-stone-100 border border-stone-300 rounded-xl text-sm font-bold text-stone-800 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">Data da Venda *</label>
+                        <input type="date" id="form-data-venda" required class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">Forma de Pagamento *</label>
+                        <select id="form-pagamento" required class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-sm font-semibold text-stone-800 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                            <option value="PIX">PIX</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="Boleto">Boleto</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">Nome do Cliente / Propriedade *</label>
+                        <input type="text" id="form-cliente" required placeholder="Ex: Fazenda Boa Esperança (João Silva)" class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">Variedade do Café *</label>
+                        <select id="form-variedade" required class="w-full px-3.5 py-2.5 bg-leaf-50 border border-leaf-300 rounded-xl text-sm font-bold text-leaf-900 focus:outline-none focus:ring-2 focus:ring-leaf-600">
+                            <option value="CAFÉ CATUAÍ">CAFÉ CATUAÍ</option>
+                            <option value="CAFÉ CATUCAÍ">CAFÉ CATUCAÍ</option>
+                            <option value="CAFÉ IAC44">CAFÉ IAC44</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Quantities & Live Balance Preview -->
+                <div class="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-stone-600">Quantidades e Retirada</span>
+                        <button type="button" onclick="fillTotalPickupInForm()" class="text-xs font-semibold text-leaf-700 hover:text-leaf-900 underline cursor-pointer">
+                            Cliente já retirou 100% no ato
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-stone-600 mb-1">Qtd. Total Comprada *</label>
+                            <input type="number" id="form-qtd-comprada" min="1" step="1" required oninput="updateFormBalancePreview()" placeholder="Ex: 10000" class="w-full px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl text-sm font-bold text-stone-800 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-stone-600 mb-1">Qtd. Já Retirada *</label>
+                            <input type="number" id="form-qtd-retirada" min="0" step="1" required oninput="updateFormBalancePreview()" value="0" class="w-full px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl text-sm font-bold text-leaf-700 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-amber-800 mb-1">Falta Retirar (Automático)</label>
+                            <div id="form-saldo-preview" class="w-full px-3.5 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-sm font-extrabold text-amber-800 flex items-center justify-between">
+                                <span>0 mudas</span>
+                                <span id="form-status-preview" class="text-[11px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">Pendente</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <div>
+                            <label class="block text-xs font-semibold text-stone-600 mb-1">Dia que Retirou (Data da Retirada)</label>
+                            <input type="date" id="form-data-retirada" class="w-full px-3.5 py-2 bg-white border border-stone-300 rounded-xl text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                            <p class="text-[11px] text-stone-400 mt-1">Deixe em branco caso ainda não tenha retirado nenhuma muda.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-stone-600 mb-1">Data de Agendamento (Previsão Retirada)</label>
+                            <input type="date" id="form-previsao-retirada" class="w-full px-3.5 py-2 bg-white border border-stone-300 rounded-xl text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                            <p class="text-[11px] text-stone-400 mt-1">Data programada para o cliente buscar o lote / saldo.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">Observações da Venda / Entrega</label>
+                    <input type="text" id="form-observacoes" placeholder="Ex: Primeira remessa retirada; restante agendado para o próximo mês..." class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                </div>
+
+                <div id="form-error-msg" class="hidden p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold"></div>
+
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-stone-200">
+                    <button type="button" onclick="closeSaleModal()" class="px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-sm transition-colors cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-leaf-600 hover:bg-leaf-500 text-white font-semibold text-sm shadow-md transition-all cursor-pointer flex items-center gap-2">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Salvar Registro</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 2: REGISTRAR RETIRADA RÁPIDA / AGENDAMENTO ==================== -->
+    <div id="pickup-modal" class="fixed inset-0 z-50 hidden bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto no-print">
+        <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-stone-200 overflow-hidden my-8">
+            <div class="bg-gradient-to-r from-amber-700 to-coffee-800 px-6 py-4 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-truck-loading text-amber-200 text-xl"></i>
+                    <div>
+                        <h3 class="text-base font-bold leading-tight">Registrar Retirada / Atualizar Agenda</h3>
+                        <p id="pickup-modal-subtitle" class="text-xs text-amber-100/90"></p>
+                    </div>
+                </div>
+                <button onclick="closePickupModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="pickup-form" onsubmit="handleSavePickup(event)" class="p-6 space-y-4">
+                <input type="hidden" id="pickup-sale-id">
+
+                <!-- Summary Box -->
+                <div class="p-3.5 rounded-2xl bg-stone-100 border border-stone-200 grid grid-cols-3 gap-2 text-center">
+                    <div>
+                        <span class="text-[11px] uppercase font-semibold text-stone-500 block">Total Comprado</span>
+                        <span id="pickup-info-comprado" class="text-sm font-extrabold text-stone-800">0</span>
+                    </div>
+                    <div class="border-x border-stone-200">
+                        <span class="text-[11px] uppercase font-semibold text-stone-500 block">Já Retirado</span>
+                        <span id="pickup-info-retirado" class="text-sm font-extrabold text-leaf-700">0</span>
+                    </div>
+                    <div>
+                        <span class="text-[11px] uppercase font-semibold text-amber-800 block">Falta Retirar</span>
+                        <span id="pickup-info-saldo" class="text-sm font-extrabold text-amber-700">0</span>
+                    </div>
+                </div>
+
+                <!-- Nova Retirada Hoje -->
+                <div class="p-4 rounded-2xl bg-leaf-50/70 border border-leaf-200 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold uppercase tracking-wider text-leaf-900">Quantas mudas o cliente está retirando agora?</label>
+                        <button type="button" onclick="setPickupRemainingBalance()" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-leaf-600 text-white hover:bg-leaf-500 transition-colors cursor-pointer">
+                            Retirar Tudo (100%)
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-stone-600 mb-1">Adicionar Retirada (+ mudas)</label>
+                            <input type="number" id="pickup-add-qty" min="0" step="1" value="0" oninput="updatePickupModalPreview()" class="w-full px-3.5 py-2.5 bg-white border border-leaf-300 rounded-xl text-base font-extrabold text-leaf-800 focus:outline-none focus:ring-2 focus:ring-leaf-600">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-stone-600 mb-1">Dia que Retirou</label>
+                            <input type="date" id="pickup-date" class="w-full px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-leaf-600">
+                        </div>
+                    </div>
+
+                    <!-- Preview after pickup -->
+                    <div class="pt-2 border-t border-leaf-200/70 flex items-center justify-between text-xs">
+                        <span class="text-stone-600 font-medium">Novo Saldo Restante após baixa:</span>
+                        <span id="pickup-new-balance-preview" class="font-extrabold text-sm text-amber-700">0 mudas</span>
+                    </div>
+                </div>
+
+                <!-- Agendamento / Previsão da Próxima Retirada -->
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">
+                        Data de Agendamento / Previsão da Próxima Retirada
+                    </label>
+                    <input type="date" id="pickup-next-schedule" class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                    <p class="text-[11px] text-stone-500 mt-1">Se ainda restarem mudas, informe a previsão para o cliente buscar o restante.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">Observações Atualizadas</label>
+                    <input type="text" id="pickup-obs" class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                </div>
+
+                <div id="pickup-error-msg" class="hidden p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold"></div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-stone-200">
+                    <button type="button" onclick="closePickupModal()" class="px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-sm cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-leaf-600 hover:bg-leaf-500 text-white font-semibold text-sm shadow-md cursor-pointer flex items-center gap-2">
+                        <i class="fa-solid fa-check-double"></i>
+                        <span>Confirmar Baixa / Agendamento</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 3: COMPROVANTE / RECIBO DE RETIRADA ==================== -->
+    <div id="receipt-modal" class="fixed inset-0 z-50 hidden bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-stone-200 overflow-hidden my-8">
+            <div class="bg-stone-800 px-6 py-4 text-white flex items-center justify-between no-print">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-leaf-400"></i>
+                    <h3 class="font-bold text-base">Comprovante de Venda e Retirada</h3>
+                </div>
+                <button onclick="closeReceiptModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="receipt-content" class="p-6 space-y-4 text-stone-800">
+                <!-- Populated via JS -->
+            </div>
+
+            <div class="px-6 py-4 bg-stone-50 border-t border-stone-200 flex items-center justify-end gap-3 no-print">
+                <button onclick="closeReceiptModal()" class="px-4 py-2 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 text-sm font-semibold cursor-pointer">
+                    Fechar
+                </button>
+                <button onclick="window.print()" class="px-5 py-2 rounded-xl bg-leaf-700 hover:bg-leaf-600 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-print"></i>
+                    <span>Imprimir Recibo</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 4: CONFIRMAÇÃO DE EXCLUSÃO OU RESET ==================== -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 id="confirm-modal-title" class="text-base font-bold text-stone-800">Confirmar Ação</h3>
+                    <p id="confirm-modal-desc" class="text-xs text-stone-500 mt-0.5"></p>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-semibold cursor-pointer">
+                    Cancelar
+                </button>
+                <button id="confirm-modal-action-btn" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-semibold cursor-pointer">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 hidden no-print">
+        <div class="bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-stone-700 flex items-center gap-3 text-sm font-medium">
+            <i id="toast-icon" class="fa-solid fa-circle-check text-leaf-400 text-lg"></i>
+            <span id="toast-message">Operação realizada com sucesso!</span>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        const STORAGE_KEY = 'viveiro_cafe_vendas_v1';
+
+        // Dados iniciais sincronizados com a planilha do usuário
+        const INITIAL_SALES_DATA = [
+            {
+                id: '1',
+                codigo: 'VND-001',
+                dataVenda: '2024-03-05',
+                cliente: 'Fazenda Bela Vista (Carlos Eduardo Silva)',
+                variedade: 'CAFÉ CATUAÍ',
+                pagamento: 'PIX',
+                qtdComprada: 10000,
+                dataRetirada: '2024-03-12',
+                qtdRetirada: 10000,
+                previsaoRetirada: '2024-03-10',
+                observacoes: 'Retirada integral do lote 01'
+            },
+            {
+                id: '2',
+                codigo: 'VND-002',
+                dataVenda: '2024-03-08',
+                cliente: 'Sítio Primavera (Antônio Marcos Pereira)',
+                variedade: 'CAFÉ CATUCAÍ',
+                pagamento: 'Boleto',
+                qtdComprada: 15000,
+                dataRetirada: '2024-03-20',
+                qtdRetirada: 8000,
+                previsaoRetirada: '2024-04-10',
+                observacoes: '2ª remessa agendada para abril'
+            },
+            {
+                id: '3',
+                codigo: 'VND-003',
+                dataVenda: '2024-03-12',
+                cliente: 'Fazenda Santa Helena (Mariana Souza Costa)',
+                variedade: 'CAFÉ IAC44',
+                pagamento: 'Dinheiro',
+                qtdComprada: 8000,
+                dataRetirada: '',
+                qtdRetirada: 0,
+                previsaoRetirada: '2024-04-05',
+                observacoes: 'Aguardando preparo do solo na propriedade'
+            },
+            {
+                id: '4',
+                codigo: 'VND-004',
+                dataVenda: '2024-03-15',
+                cliente: 'Agropecuária Morro Alto (José Roberto Fonseca)',
+                variedade: 'CAFÉ CATUAÍ',
+                pagamento: 'PIX',
+                qtdComprada: 25000,
+                dataRetirada: '2024-03-25',
+                qtdRetirada: 25000,
+                previsaoRetirada: '2024-03-22',
+                observacoes: 'Retirada com caminhão próprio baú'
+            },
+            {
+                id: '5',
+                codigo: 'VND-005',
+                dataVenda: '2024-03-18',
+                cliente: 'Fazenda Recanto Verde (Lucas Andrade Lima)',
+                variedade: 'CAFÉ CATUCAÍ',
+                pagamento: 'Dinheiro',
+                qtdComprada: 6000,
+                dataRetirada: '2024-03-28',
+                qtdRetirada: 3000,
+                previsaoRetirada: '2024-04-12',
+                observacoes: 'Primeiro lote retirado para plantio imediato'
+            },
+            {
+                id: '6',
+                codigo: 'VND-006',
+                dataVenda: '2024-03-22',
+                cliente: 'Rancho do Café (Fernando Barreto)',
+                variedade: 'CAFÉ IAC44',
+                pagamento: 'Boleto',
+                qtdComprada: 20000,
+                dataRetirada: '2024-04-02',
+                qtdRetirada: 20000,
+                previsaoRetirada: '2024-03-30',
+                observacoes: 'Retirada total efetuada com certificado'
+            },
+            {
+                id: '7',
+                codigo: 'VND-007',
+                dataVenda: '2024-03-25',
+                cliente: 'Sítio Três Meninas (Beatriz Guimarães)',
+                variedade: 'CAFÉ CATUAÍ',
+                pagamento: 'PIX',
+                qtdComprada: 12000,
+                dataRetirada: '',
+                qtdRetirada: 0,
+                previsaoRetirada: '2024-04-15',
+                observacoes: 'Aguardando término das covas'
+            },
+            {
+                id: '8',
+                codigo: 'VND-008',
+                dataVenda: '2024-03-28',
+                cliente: 'Fazenda Boa Esperança (Gustavo Henrique Neves)',
+                variedade: 'CAFÉ CATUCAÍ',
+                pagamento: 'Boleto',
+                qtdComprada: 18000,
+                dataRetirada: '2024-04-05',
+                qtdRetirada: 10000,
+                previsaoRetirada: '2024-04-20',
+                observacoes: 'Carga parcial transportada'
+            },
+            {
+                id: '9',
+                codigo: 'VND-009',
+                dataVenda: '2024-04-01',
+                cliente: 'Estância São Pedro (Paulo César Martins)',
+                variedade: 'CAFÉ IAC44',
+                pagamento: 'Dinheiro',
+                qtdComprada: 5000,
+                dataRetirada: '',
+                qtdRetirada: 0,
+                previsaoRetirada: '2024-04-18',
+                observacoes: 'Pagamento à vista confirmado, aguarda retirada'
+            },
+            {
+                id: '10',
+                codigo: 'VND-010',
+                dataVenda: '2024-04-03',
+                cliente: 'Fazenda Vale do Sol (Ricardo Albuquerque)',
+                variedade: 'CAFÉ CATUAÍ',
+                pagamento: 'PIX',
+                qtdComprada: 30000,
+                dataRetirada: '2024-04-08',
+                qtdRetirada: 15000,
+                previsaoRetirada: '2024-04-22',
+                observacoes: 'Primeira remessa de 15 mil mudas retirada'
+            },
+            {
+                id: '11',
+                codigo: 'VND-011',
+                dataVenda: '2024-04-06',
+                cliente: 'Fazenda Ouro Preto (Rodrigo Silveira)',
+                variedade: 'CAFÉ CATUCAÍ',
+                pagamento: 'Boleto',
+                qtdComprada: 14000,
+                dataRetirada: '2024-04-14',
+                qtdRetirada: 14000,
+                previsaoRetirada: '2024-04-12',
+                observacoes: 'Retirada concluída com sucesso'
+            },
+            {
+                id: '12',
+                codigo: 'VND-012',
+                dataVenda: '2024-04-08',
+                cliente: 'Sítio Serra Negra (Cláudia Ramos Oliveira)',
+                variedade: 'CAFÉ IAC44',
+                pagamento: 'PIX',
+                qtdComprada: 10000,
+                dataRetirada: '2024-04-15',
+                qtdRetirada: 5000,
+                previsaoRetirada: '2024-04-25',
+                observacoes: 'Restante agendado para o fim do mês'
+            }
+        ];
+
+        const VARIETIES = ['CAFÉ CATUAÍ', 'CAFÉ CATUCAÍ', 'CAFÉ IAC44'];
+
+        let salesData = [];
+        let selectedVarietyFilter = 'TODAS';
+        let activeMainTab = 'vendas';
+
+        // ==================== HELPERS & CALCULATIONS ====================
+        function formatNumber(num) {
+            return Number(num || 0).toLocaleString('pt-BR');
+        }
+
+        function formatDateBR(dateStr) {
+            if (!dateStr) return '—';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function getTodayISO() {
+            const d = new Date();
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function computeSaldo(sale) {
+            return Math.max(0, Number(sale.qtdComprada) - Number(sale.qtdRetirada));
+        }
+
+        function computeStatus(sale) {
+            const saldo = computeSaldo(sale);
+            const retirada = Number(sale.qtdRetirada);
+            if (saldo === 0 && Number(sale.qtdComprada) > 0) return 'Concluído';
+            if (retirada === 0) return 'Pendente';
+            return 'Retirada Parcial';
+        }
+
+        function getVarietyBadgeStyle(variedade) {
+            switch (variedade) {
+                case 'CAFÉ CATUAÍ':
+                    return {
+                        bg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+                        dot: 'bg-emerald-600',
+                        accent: 'border-l-4 border-l-emerald-600',
+                        bar: 'bg-emerald-600',
+                        headerBg: 'from-emerald-800 to-emerald-950'
+                    };
+                case 'CAFÉ CATUCAÍ':
+                    return {
+                        bg: 'bg-amber-100 text-amber-900 border-amber-300',
+                        dot: 'bg-amber-600',
+                        accent: 'border-l-4 border-l-amber-600',
+                        bar: 'bg-amber-500',
+                        headerBg: 'from-amber-700 to-coffee-900'
+                    };
+                case 'CAFÉ IAC44':
+                    return {
+                        bg: 'bg-purple-100 text-purple-900 border-purple-300',
+                        dot: 'bg-purple-600',
+                        accent: 'border-l-4 border-l-purple-600',
+                        bar: 'bg-purple-600',
+                        headerBg: 'from-purple-800 to-indigo-950'
+                    };
+                default:
+                    return {
+                        bg: 'bg-stone-100 text-stone-800 border-stone-300',
+                        dot: 'bg-stone-500',
+                        accent: 'border-l-4 border-l-stone-500',
+                        bar: 'bg-stone-600',
+                        headerBg: 'from-stone-700 to-stone-900'
+                    };
+            }
+        }
+
+        function getPaymentBadge(pagamento) {
+            if (pagamento === 'PIX') {
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200"><i class="fa-brands fa-pix text-teal-600"></i> PIX</span>`;
+            }
+            if (pagamento === 'Boleto') {
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200"><i class="fa-solid fa-barcode text-blue-600"></i> Boleto</span>`;
+            }
+            return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200"><i class="fa-solid fa-money-bill-wave text-amber-600"></i> Dinheiro</span>`;
+        }
+
+        function getStatusBadge(status) {
+            if (status === 'Concluído') {
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle-check text-emerald-600"></i> Concluído</span>`;
+            }
+            if (status === 'Retirada Parcial') {
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900"><i class="fa-solid fa-clock text-amber-600"></i> Retirada Parcial</span>`;
+            }
+            return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800"><i class="fa-solid fa-hourglass-start text-red-600"></i> Pendente</span>`;
+        }
+
+        // ==================== STORAGE ====================
+        function loadData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        salesData = parsed;
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error('Erro ao carregar dados do LocalStorage:', e);
+            }
+            salesData = JSON.parse(JSON.stringify(INITIAL_SALES_DATA));
+            saveData();
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(salesData));
+            } catch (e) {
+                console.error('Erro ao salvar no LocalStorage:', e);
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-container');
+            const msgEl = document.getElementById('toast-message');
+            msgEl.textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3200);
+        }
+
+        // ==================== NAVIGATION & FILTERS ====================
+        function switchMainTab(tab) {
+            activeMainTab = tab;
+            const tabs = ['vendas', 'agenda', 'variedades'];
+            tabs.forEach(t => {
+                const viewEl = document.getElementById(`view-${t}`);
+                const btnEl = document.getElementById(`tab-btn-${t}`);
+                if (t === tab) {
+                    viewEl.classList.remove('hidden');
+                    btnEl.className = 'px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 bg-white text-leaf-900 shadow-sm whitespace-nowrap cursor-pointer';
+                } else {
+                    viewEl.classList.add('hidden');
+                    btnEl.className = 'px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 text-leaf-100 hover:bg-white/10 whitespace-nowrap cursor-pointer';
+                }
+            });
+            renderAll();
+        }
+
+        function setVarietyFilter(variedade) {
+            selectedVarietyFilter = variedade;
+
+            // Update pills
+            document.querySelectorAll('.var-pill').forEach(btn => {
+                const v = btn.getAttribute('data-var');
+                if (v === variedade) {
+                    btn.className = 'var-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-leaf-800 text-white shadow-sm cursor-pointer flex items-center gap-1.5';
+                } else {
+                    btn.className = 'var-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-stone-100 text-stone-700 hover:bg-stone-200 cursor-pointer flex items-center gap-1.5';
+                }
+            });
+
+            const resetBtn = document.getElementById('reset-variety-btn');
+            if (variedade === 'TODAS') {
+                resetBtn.classList.add('hidden');
+            } else {
+                resetBtn.classList.remove('hidden');
+            }
+
+            if (activeMainTab !== 'vendas') {
+                switchMainTab('vendas');
+            } else {
+                renderAll();
+            }
+        }
+
+        function filterByPaymentQuick(pagamento) {
+            const sel = document.getElementById('filter-pagamento');
+            if (sel.value === pagamento) {
+                sel.value = 'TODAS';
+            } else {
+                sel.value = pagamento;
+            }
+            if (activeMainTab !== 'vendas') switchMainTab('vendas');
+            renderAll();
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            renderAll();
+        }
+
+        // ==================== RENDERING DASHBOARD & VIEWS ====================
+        function renderAll() {
+            renderKPIsAndVarieties();
+            renderSalesTable();
+            renderAgenda();
+            renderVarietiesDetailedView();
+        }
+
+        function renderKPIsAndVarieties() {
+            let totalComprado = 0;
+            let totalRetirado = 0;
+            let totalSaldo = 0;
+            let pedidosPendentesCount = 0;
+
+            const payTotals = { 'PIX': 0, 'Boleto': 0, 'Dinheiro': 0 };
+            const varStats = {};
+            VARIETIES.forEach(v => {
+                varStats[v] = { comprado: 0, retirado: 0, saldo: 0, pedidos: 0, pendentes: 0 };
+            });
+
+            salesData.forEach(s => {
+                const comp = Number(s.qtdComprada) || 0;
+                const ret = Number(s.qtdRetirada) || 0;
+                const saldo = computeSaldo(s);
+
+                totalComprado += comp;
+                totalRetirado += ret;
+                totalSaldo += saldo;
+                if (saldo > 0) pedidosPendentesCount++;
+
+                if (payTotals[s.pagamento] !== undefined) {
+                    payTotals[s.pagamento] += comp;
+                }
+
+                if (varStats[s.variedade]) {
+                    varStats[s.variedade].comprado += comp;
+                    varStats[s.variedade].retirado += ret;
+                    varStats[s.variedade].saldo += saldo;
+                    varStats[s.variedade].pedidos += 1;
+                    if (saldo > 0) varStats[s.variedade].pendentes += 1;
+                }
+            });
+
+            const percEntregue = totalComprado > 0 ? Math.round((totalRetirado / totalComprado) * 100) : 0;
+
+            document.getElementById('kpi-total-comprado').textContent = formatNumber(totalComprado);
+            document.getElementById('kpi-total-pedidos').textContent = `Em ${salesData.length} vendas registradas`;
+            document.getElementById('kpi-total-retirado').textContent = formatNumber(totalRetirado);
+            document.getElementById('kpi-perc-retirado').textContent = `${percEntregue}% do total já retirado`;
+            document.getElementById('kpi-total-saldo').textContent = formatNumber(totalSaldo);
+            document.getElementById('kpi-pedidos-pendentes').textContent = `${pedidosPendentesCount} pedido(s) com saldo a retirar`;
+
+            document.getElementById('kpi-pay-pix').textContent = `${formatNumber(payTotals['PIX'])} mudas`;
+            document.getElementById('kpi-pay-boleto').textContent = `${formatNumber(payTotals['Boleto'])} mudas`;
+            document.getElementById('kpi-pay-dinheiro').textContent = `${formatNumber(payTotals['Dinheiro'])} mudas`;
+
+            document.getElementById('badge-agenda-count').textContent = pedidosPendentesCount;
+
+            // Render Variety Cards
+            const container = document.getElementById('variety-cards-container');
+            container.innerHTML = VARIETIES.map(v => {
+                const st = varStats[v];
+                const style = getVarietyBadgeStyle(v);
+                const perc = st.comprado > 0 ? Math.round((st.retirado / st.comprado) * 100) : 0;
+                const isSelected = selectedVarietyFilter === v;
+
+                return `
+                <div onclick="setVarietyFilter('${v === selectedVarietyFilter ? 'TODAS' : v}')"
+                     class="bg-white rounded-2xl p-5 shadow-sm border transition-all cursor-pointer hover:shadow-md ${style.accent} ${isSelected ? 'ring-2 ring-leaf-700 bg-leaf-50/30' : 'border-stone-200/80'}">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-extrabold border ${style.bg}">
+                            <span class="w-2 h-2 rounded-full ${style.dot}"></span>
+                            ${v}
+                        </span>
+                        <span class="text-xs font-semibold text-stone-500">${st.pedidos} venda(s)</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 my-3 text-center">
+                        <div class="p-2 rounded-xl bg-stone-50">
+                            <span class="text-[10px] uppercase font-bold text-stone-400 block">Comprado</span>
+                            <span class="text-sm sm:text-base font-extrabold text-stone-800">${formatNumber(st.comprado)}</span>
+                        </div>
+                        <div class="p-2 rounded-xl bg-emerald-50/60">
+                            <span class="text-[10px] uppercase font-bold text-emerald-700 block">Retirado</span>
+                            <span class="text-sm sm:text-base font-extrabold text-emerald-700">${formatNumber(st.retirado)}</span>
+                        </div>
+                        <div class="p-2 rounded-xl bg-amber-50/90 border border-amber-200/60">
+                            <span class="text-[10px] uppercase font-bold text-amber-800 block">Falta Retirar</span>
+                            <span class="text-sm sm:text-base font-extrabold text-amber-700">${formatNumber(st.saldo)}</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-stone-500 font-medium">Progresso de Retirada</span>
+                            <span class="font-bold text-stone-700">${perc}% entregue</span>
+                        </div>
+                        <div class="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
+                            <div class="h-full ${style.bar} transition-all duration-300" style="width: ${perc}%"></div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function getFilteredSales() {
+            const search = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
+            const statusFilter = document.getElementById('filter-status')?.value || 'TODOS';
+            const payFilter = document.getElementById('filter-pagamento')?.value || 'TODAS';
+
+            const clearBtn = document.getElementById('clear-search-btn');
+            if (clearBtn) {
+                if (search.length > 0) clearBtn.classList.remove('hidden');
+                else clearBtn.classList.add('hidden');
+            }
+
+            return salesData.filter(s => {
+                const status = computeStatus(s);
+                const saldo = computeSaldo(s);
+
+                if (selectedVarietyFilter !== 'TODAS' && s.variedade !== selectedVarietyFilter) {
+                    return false;
+                }
+                if (statusFilter === 'COM_SALDO' && saldo === 0) {
+                    return false;
+                } else if (statusFilter !== 'TODOS' && statusFilter !== 'COM_SALDO' && status !== statusFilter) {
+                    return false;
+                }
+                if (payFilter !== 'TODAS' && s.pagamento !== payFilter) {
+                    return false;
+                }
+                if (search) {
+                    const hay = `${s.codigo} ${s.cliente} ${s.variedade} ${s.pagamento} ${s.observacoes || ''}`.toLowerCase();
+                    if (!hay.includes(search)) return false;
+                }
+                return true;
+            });
+        }
+
+        function renderSalesTable() {
+            const filtered = getFilteredSales();
+            const tbody = document.getElementById('sales-table-body');
+            const tfoot = document.getElementById('sales-table-footer');
+            const counterLabel = document.getElementById('table-counter-label');
+
+            counterLabel.textContent = `Exibindo ${filtered.length} de ${salesData.length} vendas`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="11" class="py-12 px-4 text-center text-stone-500">
+                            <i class="fa-solid fa-seedling text-3xl text-stone-300 mb-2 block"></i>
+                            <p class="font-semibold text-stone-700">Nenhuma venda encontrada para os filtros selecionados.</p>
+                            <p class="text-xs mt-1">Experimente limpar a busca ou selecionar "Todas as Variedades".</p>
+                        </td>
+                    </tr>
+                `;
+                tfoot.innerHTML = '';
+                return;
+            }
+
+            let sumComprada = 0;
+            let sumRetirada = 0;
+            let sumSaldo = 0;
+
+            tbody.innerHTML = filtered.map(s => {
+                const saldo = computeSaldo(s);
+                const status = computeStatus(s);
+                const varStyle = getVarietyBadgeStyle(s.variedade);
+
+                sumComprada += Number(s.qtdComprada) || 0;
+                sumRetirada += Number(s.qtdRetirada) || 0;
+                sumSaldo += saldo;
+
+                return `
+                <tr class="hover:bg-stone-50/90 transition-colors">
+                    <td class="py-3.5 px-4 whitespace-nowrap">
+                        <span class="font-extrabold text-stone-800 block">${s.codigo}</span>
+                        <span class="text-xs text-stone-500">${formatDateBR(s.dataVenda)}</span>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="font-bold text-stone-800">${s.cliente}</div>
+                        ${s.observacoes ? `<div class="text-xs text-stone-500 mt-0.5 line-clamp-1" title="${s.observacoes}"><i class="fa-regular fa-comment-dots mr-1"></i>${s.observacoes}</div>` : ''}
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${varStyle.bg}">
+                            <span class="w-2 h-2 rounded-full ${varStyle.dot}"></span>
+                            ${s.variedade}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-3 text-center whitespace-nowrap">
+                        ${getPaymentBadge(s.pagamento)}
+                    </td>
+                    <td class="py-3.5 px-3 text-right font-bold text-stone-800 whitespace-nowrap">
+                        ${formatNumber(s.qtdComprada)}
+                    </td>
+                    <td class="py-3.5 px-3 text-right font-bold text-leaf-700 whitespace-nowrap">
+                        ${formatNumber(s.qtdRetirada)}
+                    </td>
+                    <td class="py-3.5 px-3 text-right font-extrabold whitespace-nowrap bg-amber-50/40 ${saldo > 0 ? 'text-amber-700' : 'text-stone-400'}">
+                        ${formatNumber(saldo)}
+                    </td>
+                    <td class="py-3.5 px-3 text-center whitespace-nowrap text-xs font-medium text-stone-700">
+                        ${s.dataRetirada ? `<span class="px-2 py-0.5 rounded-md bg-stone-100">${formatDateBR(s.dataRetirada)}</span>` : '<span class="text-stone-400">—</span>'}
+                    </td>
+                    <td class="py-3.5 px-3 text-center whitespace-nowrap text-xs">
+                        ${s.previsaoRetirada ? `
+                            <span class="inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded-md ${saldo > 0 ? 'bg-amber-100/80 text-amber-900' : 'text-stone-400 line-through'}">
+                                <i class="fa-regular fa-calendar"></i>
+                                ${formatDateBR(s.previsaoRetirada)}
+                            </span>
+                        ` : '<span class="text-stone-400">—</span>'}
+                    </td>
+                    <td class="py-3.5 px-3 text-center whitespace-nowrap">
+                        ${getStatusBadge(status)}
+                    </td>
+                    <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div class="inline-flex items-center justify-end gap-1.5">
+                            <button onclick="openPickupModal('${s.id}')"
+                                    class="px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${saldo > 0 ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs' : 'bg-stone-100 hover:bg-stone-200 text-stone-600'}"
+                                    title="Registrar retirada de mudas ou reagendar previsão">
+                                <i class="fa-solid fa-truck-ramp-box"></i>
+                                <span>${saldo > 0 ? 'Retirar' : 'Retirada'}</span>
+                            </button>
+                            <button onclick="openReceiptModal('${s.id}')" class="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 hover:text-stone-900 transition-colors cursor-pointer" title="Emitir recibo / comprovante">
+                                <i class="fa-solid fa-receipt text-xs"></i>
+                            </button>
+                            <button onclick="openSaleModal('${s.id}')" class="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 hover:text-stone-900 transition-colors cursor-pointer" title="Editar venda">
+                                <i class="fa-solid fa-pen text-xs"></i>
+                            </button>
+                            <button onclick="confirmDeleteSale('${s.id}')" class="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition-colors cursor-pointer" title="Excluir venda">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+
+            tfoot.innerHTML = `
+                <tr>
+                    <td colspan="4" class="py-3.5 px-4 text-right uppercase text-xs tracking-wider text-stone-500">
+                        Totais do Filtro (${filtered.length} pedidos):
+                    </td>
+                    <td class="py-3.5 px-3 text-right font-extrabold text-stone-900">${formatNumber(sumComprada)}</td>
+                    <td class="py-3.5 px-3 text-right font-extrabold text-leaf-700">${formatNumber(sumRetirada)}</td>
+                    <td class="py-3.5 px-3 text-right font-extrabold text-amber-700 bg-amber-50/70">${formatNumber(sumSaldo)}</td>
+                    <td colspan="4"></td>
+                </tr>
+            `;
+        }
+
+        // ==================== TAB 2: AGENDA DE RETIRADAS ====================
+        function renderAgenda() {
+            const container = document.getElementById('agenda-list-container');
+            const varFilter = document.getElementById('agenda-variety-filter')?.value || 'TODAS';
+
+            const pendingOrders = salesData
+                .filter(s => computeSaldo(s) > 0 && (varFilter === 'TODAS' || s.variedade === varFilter))
+                .sort((a, b) => {
+                    const da = a.previsaoRetirada || '9999-12-31';
+                    const db = b.previsaoRetirada || '9999-12-31';
+                    return da.localeCompare(db);
+                });
+
+            if (pendingOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-stone-500 bg-stone-50 rounded-2xl border border-stone-200/60">
+                        <i class="fa-solid fa-circle-check text-3xl text-leaf-500 mb-2 block"></i>
+                        <p class="font-bold text-stone-700">Não há retiradas pendentes para esta seleção!</p>
+                        <p class="text-xs mt-1">Todas as mudas vendidas já foram entregues aos clientes.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = pendingOrders.map(s => {
+                const saldo = computeSaldo(s);
+                const status = computeStatus(s);
+                const varStyle = getVarietyBadgeStyle(s.variedade);
+                const perc = s.qtdComprada > 0 ? Math.round((s.qtdRetirada / s.qtdComprada) * 100) : 0;
+
+                return `
+                <div class="bg-stone-50/70 rounded-2xl p-4 border border-stone-200 hover:border-leaf-400 transition-all flex flex-col justify-between gap-4 ${varStyle.accent}">
+                    <div>
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <span class="text-xs font-extrabold text-stone-400">${s.codigo}</span>
+                                <h3 class="font-bold text-stone-800 text-base">${s.cliente}</h3>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[11px] uppercase font-bold text-stone-400 block">Previsão Agendada</span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-extrabold text-xs mt-0.5">
+                                    <i class="fa-solid fa-calendar-day"></i>
+                                    ${formatDateBR(s.previsaoRetirada)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2 mt-3">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${varStyle.bg}">
+                                ${s.variedade}
+                            </span>
+                            ${getPaymentBadge(s.pagamento)}
+                            ${getStatusBadge(status)}
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 mt-4 p-2.5 bg-white rounded-xl border border-stone-200/70 text-center">
+                            <div>
+                                <span class="text-[10px] uppercase font-bold text-stone-400 block">Total Comprado</span>
+                                <span class="text-sm font-bold text-stone-800">${formatNumber(s.qtdComprada)}</span>
+                            </div>
+                            <div class="border-x border-stone-100">
+                                <span class="text-[10px] uppercase font-bold text-leaf-700 block">Já Retirou</span>
+                                <span class="text-sm font-bold text-leaf-700">${formatNumber(s.qtdRetirada)} (${perc}%)</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] uppercase font-bold text-amber-800 block">Separar p/ Entrega</span>
+                                <span class="text-sm font-extrabold text-amber-700">${formatNumber(saldo)} mudas</span>
+                            </div>
+                        </div>
+
+                        ${s.observacoes ? `
+                            <p class="text-xs text-stone-600 mt-3 bg-white px-3 py-2 rounded-xl border border-stone-200/60">
+                                <i class="fa-regular fa-note-sticky text-amber-600 mr-1"></i> ${s.observacoes}
+                            </p>
+                        ` : ''}
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-stone-200/60">
+                        <span class="text-xs text-stone-500">
+                            Última retirada: <strong>${formatDateBR(s.dataRetirada)}</strong>
+                        </span>
+                        <button onclick="openPickupModal('${s.id}')" class="px-3.5 py-2 rounded-xl bg-leaf-600 hover:bg-leaf-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5">
+                            <i class="fa-solid fa-truck-ramp-box"></i>
+                            <span>Dar Baixa / Reagendar</span>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // ==================== TAB 3: PAINEL DETALHADO POR VARIEDADE ====================
+        function renderVarietiesDetailedView() {
+            const container = document.getElementById('variedades-detailed-container');
+
+            container.innerHTML = VARIETIES.map(v => {
+                const style = getVarietyBadgeStyle(v);
+                const list = salesData.filter(s => s.variedade === v);
+                const totComp = list.reduce((acc, x) => acc + (Number(x.qtdComprada) || 0), 0);
+                const totRet = list.reduce((acc, x) => acc + (Number(x.qtdRetirada) || 0), 0);
+                const totSaldo = list.reduce((acc, x) => acc + computeSaldo(x), 0);
+
+                return `
+                <div class="bg-white rounded-2xl shadow-sm border border-stone-200/90 overflow-hidden flex flex-col">
+                    <div class="bg-gradient-to-r ${style.headerBg} p-4 text-white">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-extrabold text-base tracking-wide flex items-center gap-2">
+                                <i class="fa-solid fa-seedling text-white/80"></i>
+                                <span>${v}</span>
+                            </h3>
+                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-white/15 font-semibold">${list.length} pedidos</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/15 text-center">
+                            <div>
+                                <span class="text-[10px] uppercase text-white/70 block">Comprado</span>
+                                <span class="text-sm font-extrabold">${formatNumber(totComp)}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] uppercase text-emerald-200 block">Retirado</span>
+                                <span class="text-sm font-extrabold text-emerald-200">${formatNumber(totRet)}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] uppercase text-amber-200 block">Falta Retirar</span>
+                                <span class="text-sm font-extrabold text-amber-300">${formatNumber(totSaldo)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 flex-1 space-y-3 divide-y divide-stone-100">
+                        ${list.map(s => {
+                            const saldo = computeSaldo(s);
+                            const status = computeStatus(s);
+                            return `
+                            <div class="pt-3 first:pt-0">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <span class="text-[11px] font-bold text-stone-400">${s.codigo} • ${formatDateBR(s.dataVenda)}</span>
+                                        <h4 class="font-bold text-stone-800 text-sm">${s.cliente}</h4>
+                                    </div>
+                                    ${getStatusBadge(status)}
+                                </div>
+                                <div class="flex items-center justify-between text-xs mt-2 bg-stone-50 px-3 py-2 rounded-xl">
+                                    <span>Comp: <strong>${formatNumber(s.qtdComprada)}</strong></span>
+                                    <span class="text-leaf-700">Ret: <strong>${formatNumber(s.qtdRetirada)}</strong></span>
+                                    <span class="${saldo > 0 ? 'text-amber-700 font-bold' : 'text-stone-400'}">Falta: <strong>${formatNumber(saldo)}</strong></span>
+                                </div>
+                                <div class="flex items-center justify-between text-[11px] text-stone-500 mt-1.5 px-1">
+                                    <span>Pagto: <strong>${s.pagamento}</strong></span>
+                                    <span>Prev. Retirada: <strong>${formatDateBR(s.previsaoRetirada)}</strong></span>
+                                </div>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // ==================== MODAL 1: NOVA VENDA / EDITAR ====================
+        function generateNextCode() {
+            let maxNum = 0;
+            salesData.forEach(s => {
+                const match = String(s.codigo).match(/(\d+)/);
+                if (match) {
+                    const n = parseInt(match[1], 10);
+                    if (n > maxNum) maxNum = n;
+                }
+            });
+            return `VND-${String(maxNum + 1).padStart(3, '0')}`;
+        }
+
+        function openSaleModal(saleId = null) {
+            const modal = document.getElementById('sale-modal');
+            const titleEl = document.getElementById('sale-modal-title');
+            const errEl = document.getElementById('form-error-msg');
+            errEl.classList.add('hidden');
+
+            if (saleId) {
+                const sale = salesData.find(s => s.id === saleId);
+                if (!sale) return;
+                titleEl.textContent = `Editar Venda ${sale.codigo}`;
+                document.getElementById('form-sale-id').value = sale.id;
+                document.getElementById('form-codigo').value = sale.codigo;
+                document.getElementById('form-data-venda').value = sale.dataVenda;
+                document.getElementById('form-pagamento').value = sale.pagamento;
+                document.getElementById('form-cliente').value = sale.cliente;
+                document.getElementById('form-variedade').value = sale.variedade;
+                document.getElementById('form-qtd-comprada').value = sale.qtdComprada;
+                document.getElementById('form-qtd-retirada').value = sale.qtdRetirada;
+                document.getElementById('form-data-retirada').value = sale.dataRetirada || '';
+                document.getElementById('form-previsao-retirada').value = sale.previsaoRetirada || '';
+                document.getElementById('form-observacoes').value = sale.observacoes || '';
+            } else {
+                titleEl.textContent = 'Cadastrar Nova Venda de Mudas';
+                document.getElementById('form-sale-id').value = '';
+                document.getElementById('form-codigo').value = generateNextCode();
+                document.getElementById('form-data-venda').value = getTodayISO();
+                document.getElementById('form-pagamento').value = 'PIX';
+                document.getElementById('form-cliente').value = '';
+                document.getElementById('form-variedade').value = selectedVarietyFilter !== 'TODAS' ? selectedVarietyFilter : 'CAFÉ CATUAÍ';
+                document.getElementById('form-qtd-comprada').value = '';
+                document.getElementById('form-qtd-retirada').value = '0';
+                document.getElementById('form-data-retirada').value = '';
+                document.getElementById('form-previsao-retirada').value = '';
+                document.getElementById('form-observacoes').value = '';
+            }
+
+            updateFormBalancePreview();
+            modal.classList.remove('hidden');
+        }
+
+        function closeSaleModal() {
+            document.getElementById('sale-modal').classList.add('hidden');
+        }
+
+        function fillTotalPickupInForm() {
+            const comp = Number(document.getElementById('form-qtd-comprada').value) || 0;
+            if (comp > 0) {
+                document.getElementById('form-qtd-retirada').value = comp;
+                if (!document.getElementById('form-data-retirada').value) {
+                    document.getElementById('form-data-retirada').value = getTodayISO();
+                }
+                updateFormBalancePreview();
+            }
+        }
+
+        function updateFormBalancePreview() {
+            const comp = Number(document.getElementById('form-qtd-comprada').value) || 0;
+            const ret = Number(document.getElementById('form-qtd-retirada').value) || 0;
+            const saldo = Math.max(0, comp - ret);
+            const status = computeStatus({ qtdComprada: comp, qtdRetirada: ret });
+
+            const previewEl = document.getElementById('form-saldo-preview');
+            previewEl.innerHTML = `
+                <span>${formatNumber(saldo)} mudas</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-full ${status === 'Concluído' ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-200 text-amber-900'}">${status}</span>
+            `;
+        }
+
+        function handleSaveSale(e) {
+            e.preventDefault();
+            const errEl = document.getElementById('form-error-msg');
+            errEl.classList.add('hidden');
+
+            const id = document.getElementById('form-sale-id').value;
+            const codigo = document.getElementById('form-codigo').value.trim();
+            const dataVenda = document.getElementById('form-data-venda').value;
+            const pagamento = document.getElementById('form-pagamento').value;
+            const cliente = document.getElementById('form-cliente').value.trim();
+            const variedade = document.getElementById('form-variedade').value;
+            const qtdComprada = Number(document.getElementById('form-qtd-comprada').value);
+            const qtdRetirada = Number(document.getElementById('form-qtd-retirada').value);
+            const dataRetirada = document.getElementById('form-data-retirada').value;
+            const previsaoRetirada = document.getElementById('form-previsao-retirada').value;
+            const observacoes = document.getElementById('form-observacoes').value.trim();
+
+            if (qtdRetirada > qtdComprada) {
+                errEl.textContent = 'A quantidade retirada não pode ser maior que a quantidade total comprada.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+
+            if (id) {
+                const idx = salesData.findIndex(s => s.id === id);
+                if (idx !== -1) {
+                    salesData[idx] = {
+                        ...salesData[idx],
+                        codigo,
+                        dataVenda,
+                        pagamento,
+                        cliente,
+                        variedade,
+                        qtdComprada,
+                        qtdRetirada,
+                        dataRetirada,
+                        previsaoRetirada,
+                        observacoes
+                    };
+                }
+                showToast(`Venda ${codigo} atualizada com sucesso!`);
+            } else {
+                const newSale = {
+                    id: String(Date.now()),
+                    codigo,
+                    dataVenda,
+                    pagamento,
+                    cliente,
+                    variedade,
+                    qtdComprada,
+                    qtdRetirada,
+                    dataRetirada,
+                    previsaoRetirada,
+                    observacoes
+                };
+                salesData.unshift(newSale);
+                showToast(`Nova venda ${codigo} cadastrada com sucesso!`);
+            }
+
+            saveData();
+            closeSaleModal();
+            renderAll();
+        }
+
+        // ==================== MODAL 2: REGISTRAR RETIRADA RÁPIDA ====================
+        function openPickupModal(saleId) {
+            const sale = salesData.find(s => s.id === saleId);
+            if (!sale) return;
+
+            const saldo = computeSaldo(sale);
+            document.getElementById('pickup-sale-id').value = sale.id;
+            document.getElementById('pickup-modal-subtitle').textContent = `${sale.codigo} • ${sale.cliente} (${sale.variedade})`;
+
+            document.getElementById('pickup-info-comprado').textContent = `${formatNumber(sale.qtdComprada)} mudas`;
+            document.getElementById('pickup-info-retirado').textContent = `${formatNumber(sale.qtdRetirada)} mudas`;
+            document.getElementById('pickup-info-saldo').textContent = `${formatNumber(saldo)} mudas`;
+
+            document.getElementById('pickup-add-qty').value = saldo;
+            document.getElementById('pickup-add-qty').max = saldo;
+            document.getElementById('pickup-date').value = sale.dataRetirada || getTodayISO();
+            document.getElementById('pickup-next-schedule').value = sale.previsaoRetirada || '';
+            document.getElementById('pickup-obs').value = sale.observacoes || '';
+
+            document.getElementById('pickup-error-msg').classList.add('hidden');
+            updatePickupModalPreview();
+            document.getElementById('pickup-modal').classList.remove('hidden');
+        }
+
+        function closePickupModal() {
+            document.getElementById('pickup-modal').classList.add('hidden');
+        }
+
+        function setPickupRemainingBalance() {
+            const saleId = document.getElementById('pickup-sale-id').value;
+            const sale = salesData.find(s => s.id === saleId);
+            if (!sale) return;
+            document.getElementById('pickup-add-qty').value = computeSaldo(sale);
+            document.getElementById('pickup-date').value = getTodayISO();
+            updatePickupModalPreview();
+        }
+
+        function updatePickupModalPreview() {
+            const saleId = document.getElementById('pickup-sale-id').value;
+            const sale = salesData.find(s => s.id === saleId);
+            if (!sale) return;
+
+            const addQty = Number(document.getElementById('pickup-add-qty').value) || 0;
+            const currentSaldo = computeSaldo(sale);
+            const newSaldo = Math.max(0, currentSaldo - addQty);
+
+            const el = document.getElementById('pickup-new-balance-preview');
+            if (newSaldo === 0) {
+                el.textContent = '0 mudas (Entrega 100% Concluída!)';
+                el.className = 'font-extrabold text-sm text-emerald-700';
+            } else {
+                el.textContent = `${formatNumber(newSaldo)} mudas pendentes`;
+                el.className = 'font-extrabold text-sm text-amber-700';
+            }
+        }
+
+        function handleSavePickup(e) {
+            e.preventDefault();
+            const saleId = document.getElementById('pickup-sale-id').value;
+            const sale = salesData.find(s => s.id === saleId);
+            if (!sale) return;
+
+            const addQty = Number(document.getElementById('pickup-add-qty').value) || 0;
+            const currentSaldo = computeSaldo(sale);
+            const errEl = document.getElementById('pickup-error-msg');
+
+            if (addQty < 0 || addQty > currentSaldo) {
+                errEl.textContent = `O valor de retirada deve estar entre 0 e o saldo disponível (${formatNumber(currentSaldo)} mudas).`;
+                errEl.classList.remove('hidden');
+                return;
+            }
+
+            sale.qtdRetirada = Number(sale.qtdRetirada) + addQty;
+            if (addQty > 0) {
+                sale.dataRetirada = document.getElementById('pickup-date').value || getTodayISO();
+            }
+            sale.previsaoRetirada = document.getElementById('pickup-next-schedule').value;
+            sale.observacoes = document.getElementById('pickup-obs').value.trim();
+
+            saveData();
+            closePickupModal();
+            renderAll();
+            showToast(`Retirada atualizada para o pedido ${sale.codigo}!`);
+        }
+
+        // ==================== MODAL 3: RECIBO / COMPROVANTE ====================
+        function openReceiptModal(saleId) {
+            const sale = salesData.find(s => s.id === saleId);
+            if (!sale) return;
+
+            const saldo = computeSaldo(sale);
+            const status = computeStatus(sale);
+            const content = document.getElementById('receipt-content');
+
+            content.innerHTML = `
+                <div class="border-2 border-stone-800 rounded-2xl p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-stone-300 pb-3">
+                        <div>
+                            <h2 class="text-lg font-extrabold text-stone-900">VIVEIRO CAFÉGESTÃO</h2>
+                            <p class="text-xs text-stone-500">Comprovante de Venda e Controle de Retirada de Mudas</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-bold uppercase text-stone-400 block">Pedido Nº</span>
+                            <span class="text-base font-extrabold text-stone-900">${sale.codigo}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <span class="text-stone-500 block">Cliente / Propriedade:</span>
+                            <strong class="text-sm text-stone-900">${sale.cliente}</strong>
+                        </div>
+                        <div>
+                            <span class="text-stone-500 block">Variedade das Mudas:</span>
+                            <strong class="text-sm text-stone-900">${sale.variedade}</strong>
+                        </div>
+                        <div>
+                            <span class="text-stone-500 block">Data da Venda:</span>
+                            <strong class="text-stone-800">${formatDateBR(sale.dataVenda)}</strong>
+                        </div>
+                        <div>
+                            <span class="text-stone-500 block">Forma de Pagamento:</span>
+                            <strong class="text-stone-800">${sale.pagamento}</strong>
+                        </div>
+                    </div>
+
+                    <div class="bg-stone-100 rounded-xl p-3.5 grid grid-cols-3 gap-2 text-center border border-stone-200">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-stone-500 block">Total Comprado</span>
+                            <span class="text-base font-extrabold text-stone-900">${formatNumber(sale.qtdComprada)}</span>
+                        </div>
+                        <div class="border-x border-stone-300">
+                            <span class="text-[10px] uppercase font-bold text-leaf-800 block">Total Já Retirado</span>
+                            <span class="text-base font-extrabold text-leaf-700">${formatNumber(sale.qtdRetirada)}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-amber-900 block">Saldo a Retirar</span>
+                            <span class="text-base font-extrabold text-amber-800">${formatNumber(saldo)}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-xs pt-1">
+                        <div>
+                            <span class="text-stone-500 block">Data da Última Retirada:</span>
+                            <strong class="text-stone-800">${formatDateBR(sale.dataRetirada)}</strong>
+                        </div>
+                        <div>
+                            <span class="text-stone-500 block">Previsão Próxima Retirada:</span>
+                            <strong class="text-stone-800">${formatDateBR(sale.previsaoRetirada)}</strong>
+                        </div>
+                    </div>
+
+                    <div class="text-xs">
+                        <span class="text-stone-500 block">Status Atual / Observações:</span>
+                        <p class="font-semibold text-stone-800 mt-0.5">${status} — ${sale.observacoes || 'Sem observações adicionais.'}</p>
+                    </div>
+
+                    <div class="pt-8 grid grid-cols-2 gap-6 text-center text-xs text-stone-500">
+                        <div class="border-t border-stone-400 pt-1">Assinatura do Viveiro</div>
+                        <div class="border-t border-stone-400 pt-1">Assinatura do Cliente / Responsável</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+        }
+
+        // ==================== MODAL 4: EXCLUSÃO E RESTAURAÇÃO ====================
+        function confirmDeleteSale(saleId) {
+            const sale = salesData.find(s => s.id === saleId);
+            if (!sale) return;
+
+            document.getElementById('confirm-modal-title').textContent = `Excluir Venda ${sale.codigo}?`;
+            document.getElementById('confirm-modal-desc').textContent = `Tem certeza que deseja remover o pedido de "${sale.cliente}" (${formatNumber(sale.qtdComprada)} mudas de ${sale.variedade})?`;
+
+            const btn = document.getElementById('confirm-modal-action-btn');
+            btn.textContent = 'Sim, Excluir';
+            btn.onclick = () => {
+                salesData = salesData.filter(s => s.id !== saleId);
+                saveData();
+                closeConfirmModal();
+                renderAll();
+                showToast(`Pedido ${sale.codigo} removido.`);
+            };
+
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function openResetConfirmModal() {
+            document.getElementById('confirm-modal-title').textContent = 'Restaurar Dados da Planilha?';
+            document.getElementById('confirm-modal-desc').textContent = 'Isso irá restaurar os 12 pedidos originais sincronizados com a sua planilha Google. Alterações manuais feitas no navegador serão substituídas.';
+
+            const btn = document.getElementById('confirm-modal-action-btn');
+            btn.textContent = 'Restaurar Dados';
+            btn.onclick = () => {
+                salesData = JSON.parse(JSON.stringify(INITIAL_SALES_DATA));
+                saveData();
+                closeConfirmModal();
+                renderAll();
+                showToast('Dados originais restaurados com sucesso!');
+            };
+
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        // ==================== EXPORT CSV ====================
+        function exportToCSV() {
+            const headers = [
+                'Cód. Venda',
+                'Data da Venda',
+                'Nome do Cliente',
+                'Variedade',
+                'Forma de Pagamento',
+                'Qtd. Comprada',
+                'Data da Retirada',
+                'Qtd. Retirada',
+                'Saldo a Retirar',
+                'Previsão de Retirada',
+                'Status da Entrega',
+                'Observações'
+            ];
+
+            const rows = salesData.map(s => [
+                s.codigo,
+                s.dataVenda,
+                `"${(s.cliente || '').replace(/"/g, '""')}"`,
+                s.variedade,
+                s.pagamento,
+                s.qtdComprada,
+                s.dataRetirada || '',
+                s.qtdRetirada,
+                computeSaldo(s),
+                s.previsaoRetirada || '',
+                computeStatus(s),
+                `"${(s.observacoes || '').replace(/"/g, '""')}"`
+            ]);
+
+            const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `controle_mudas_cafe_${getTodayISO()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Arquivo CSV exportado com sucesso!');
+        }
+
+        // Initialize app on load
+        window.onload = function () {
+            loadData();
+            renderAll();
+        };
+    </script>
+</body>
+</html>
